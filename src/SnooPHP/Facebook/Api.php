@@ -3,7 +3,6 @@
 namespace SnooPHP\Facebook;
 
 use SnooPHP\Http\Curl\Get;
-use SnooPHP\Http\Curl\Post;
 
 /**
  * Perform raw api requests or use dedicated methods
@@ -32,6 +31,11 @@ class Api
 	protected $token;
 
 	/**
+	 * @var string $lastResult store last request result (raw)
+	 */
+	protected $lastResult;
+
+	/**
 	 * @var string $version api version (default: v1)
 	 */
 	protected $version = "v3.0";
@@ -39,7 +43,12 @@ class Api
 	/**
 	 * @var string $cacheClass cache class
 	 */
-	protected $cacheClass = "SnooPHP\Facebook\NullCache";
+	protected $cacheClass;
+
+	/**
+	 * @var string $defaultCacheClass
+	 */
+	protected static $defaultCacheClass = "SnooPHP\Facebook\NullCache";
 
 	/**
 	 * @const ENDPOINT facebook api endpoint
@@ -47,9 +56,18 @@ class Api
 	const ENDPOINT = "https://graph.facebook.com";
 
 	/**
+	 * Create a new instance
+	 */
+	public function __construct()
+	{
+		// Set cache class
+		$this->cacheClass = static::$defaultCacheClass;
+	}
+
+	/**
 	 * Perform a generic query
 	 * 
-	 * @param string $query query string (with parameters)
+	 * @param string	$query	query string (with parameters)
 	 * 
 	 * @return object|bool false if fails
 	 */
@@ -60,26 +78,35 @@ class Api
 			$token = $this->clientToken();
 		else
 			$token = $this->token;
-
-		// Check if cached result exists
-		if ($record = $this->cacheClass::fetch($query, $token)) return $record;
-
-		// Make api request
+		
+		// Build uri
 		$uri	= preg_match("/^https?:\/\//", $query) ? $query : static::ENDPOINT."/{$this->version}/{$query}";
 		$uri	.= (strpos($query, '?') !== false ? '&' : '?')."access_token=$token";
-		$curl	= new Get($uri);
+
+		// Check if cached result exists
+		if ($record = $this->cacheClass::fetch("$uri|$token")) return $record;
+
+		// Make api request
+		$curl = new Get($uri);
 		if ($curl && $curl->success())
 		{
 			// Save record in cache and return it
-			$raw = $curl->content();
-			return $this->cacheClass::store($query, $token, $raw);
+			$this->lastResult = $curl->content();
+			return $this->cacheClass::store("$uri|$token", $this->lastResult);
 		}
 		else
+		{
+			$this->lastResult = false;
 			return false;
+		}
 	}
 
 	/**
 	 * Get client token from client id and secret
+	 * 
+	 * A client token cannot be use to access a user private data
+	 * But it is suitable to query public content (e.g. page public data)
+	 * It is obtained by simply concatenating the app client id and client secret
 	 * 
 	 * @return string
 	 */
@@ -89,14 +116,14 @@ class Api
 	}
 
 	/**
-	 * Create a new instance from client id and secret
+	 * Create a new instance from client id and client secret
 	 * 
 	 * @param string	$clientId		client id
 	 * @param string	$clientSecret	client secret
 	 * 
 	 * @return Api
 	 */
-	public static function byClient($clientId, $clientSecret)
+	public static function withClient($clientId, $clientSecret)
 	{
 		$api = new static();
 		$api->clientId		= $clientId;
@@ -107,14 +134,27 @@ class Api
 	/**
 	 * Create a new instance from existing access token
 	 * 
-	 * @param string $token provided access token
+	 * @param string	$token	provided access token
 	 * 
 	 * @return Api
 	 */
-	public static function byToken($token)
+	public static function withToken($token)
 	{
 		$api = new static();
 		$api->token = $token;
 		return $api;
+	}
+
+	/**
+	 * Set or get default cache class for this session
+	 * 
+	 * @param string|null	$defaultCacheClass	cache full classname
+	 * 
+	 * @return string
+	 */
+	public static function defaultCacheClass($defaultCacheClass = null)
+	{
+		if ($defaultCacheClass) static::$defaultCacheClass = $defaultCacheClass;
+		return static::$defaultCacheClass;
 	}
 }

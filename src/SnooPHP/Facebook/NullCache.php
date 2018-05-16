@@ -2,6 +2,8 @@
 
 namespace SnooPHP\Facebook;
 
+use SnooPHP\Cache\I_Cache;
+
 /**
  * Fake cache
  * 
@@ -12,12 +14,11 @@ class NullCache implements I_Cache
 	/**
 	 * Fetch a record from cache
 	 * 
-	 * @param string	$query			query string
-	 * @param string	$token	access token used
+	 * @param string	$uri	uri + used token
 	 * 
 	 * @return object|null
 	 */
-	public static function fetch($query, $token)
+	public static function fetch($uri)
 	{
 		return null;
 	}
@@ -25,13 +26,12 @@ class NullCache implements I_Cache
 	/**
 	 * Store a record in cache
 	 * 
-	 * @param string	$query			query string
-	 * @param string	$token	access token used
-	 * @param string	$content		query response content
+	 * @param string	$uri		uri + used token
+	 * @param string	$content	query response content
 	 * 
 	 * @return object|null
 	 */
-	public static function store($query, $token, $content)
+	public static function store($uri, $content)
 	{
 		return json_decode($content);
 	}
