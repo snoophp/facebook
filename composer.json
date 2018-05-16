@@ -1,0 +1,35 @@
+{
+    "name": "snoophp/facebook",
+	"description": "Provides an easy-to-us interface to access facebook graph api",
+	"keywords": [
+		"facebook",
+		"api",
+		"face",
+		"book",
+		"streaming",
+		"snoophp",
+		"sneppy"
+	],
+    "type": "library",
+	"license": "MIT",
+	"minimum-stability": "dev",
+	"support": {
+		"issues": "https://github.com/snoophp/facebook/issues",
+        "source": "https://github.com/snoophp/facebook"
+	},
+    "authors": [
+        {
+            "name": "Sneppy",
+            "email": "andrea.mecchia@mail.polimi.it"
+        }
+    ],
+    "require": {
+		"php": ">7.0",
+		"snoophp/framework": ">0.1"
+	},
+	"autoload": {
+        "psr-4": {
+            "SnooPHP\\": "src/SnooPHP/"
+        }
+    }
+}
