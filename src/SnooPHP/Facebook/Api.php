@@ -34,7 +34,7 @@ class Api
 	/**
 	 * @var string $version api version (default: v1)
 	 */
-	protected $version = "v1";
+	protected $version = "v3.0";
 
 	/**
 	 * @var string $cacheClass cache class
@@ -44,12 +44,7 @@ class Api
 	/**
 	 * @const ENDPOINT facebook api endpoint
 	 */
-	const ENDPOINT = "https://api.facebook.com";
-
-	/**
-	 * @const ENDPOINT_ACCOUNT facebook accounts endpoint, used to retrieve tokens
-	 */
-	const ENDPOINT_ACCOUNT = "https://accounts.facebook.com";
+	const ENDPOINT = "https://graph.facebook.com";
 
 	/**
 	 * Perform a generic query
@@ -60,65 +55,37 @@ class Api
 	 */
 	public function query($query)
 	{
-		// If no access token, abort
-		if (!$this->token || empty($this->token->access_token)) return false;
+		// If no access token, try to use client token
+		if (!$this->token || empty($this->token->access_token))
+			$token = $this->clientToken();
+		else
+			$token = $this->token;
 
 		// Check if cached result exists
-		if ($record = $this->cacheClass::fetch($query, $this->authToken())) return $record;
+		if ($record = $this->cacheClass::fetch($query, $token)) return $record;
 
 		// Make api request
 		$uri	= preg_match("/^https?:\/\//", $query) ? $query : static::ENDPOINT."/{$this->version}/{$query}";
-		$curl	= Get::withAuth($uri, $this->authToken());
+		$uri	.= (strpos($query, '?') !== false ? '&' : '?')."access_token=$token";
+		$curl	= new Get($uri);
 		if ($curl && $curl->success())
 		{
 			// Save record in cache and return it
 			$raw = $curl->content();
-			return $this->cacheClass::store($query, $this->authToken(), $raw);
+			return $this->cacheClass::store($query, $token, $raw);
 		}
 		else
 			return false;
 	}
 
 	/**
-	 * Get app refreshable token
-	 * 
-	 * @return object|false
-	 */
-	public function getAppToken()
-	{
-		$curl = Post::withAuth(
-			static::ENDPOINT_ACCOUNT."/api/token",
-			"Basic {$this->generateAppAuthHeader()}",
-			http_build_query(["grant_type" => "client_credentials"])
-		);
-
-		if ($curl && $curl->success())
-		{
-			$this->token = $curl->content(true);
-			return $this->token;
-		}
-		else
-			return false;
-	}
-
-	/**
-	 * Get authorization token header
+	 * Get client token from client id and secret
 	 * 
 	 * @return string
 	 */
-	protected function authToken()
+	protected function clientToken()
 	{
-		return $this->token->token_type." ".$this->token->access_token;
-	}
-
-	/**
-	 * Generate authorization header given client id and secret
-	 * 
-	 * @return string
-	 */
-	protected function generateAppAuthHeader()
-	{
-		return base64_encode("{$this->clientId}:{$this->clientSecret}");
+		return $this->clientId."|".$this->clientSecret;
 	}
 
 	/**
