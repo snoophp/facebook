@@ -25,7 +25,9 @@
     ],
     "require": {
 		"php": ">7.0",
-		"snoophp/cache": ">=0.0.1"
+		"snoophp/cache": "*",
+		"snoophp/curl": "*",
+		"snoophp/utils": "*"
 	},
 	"autoload": {
         "psr-4": {
