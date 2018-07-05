@@ -2,7 +2,7 @@
 
 namespace SnooPHP\Facebook;
 
-use SnooPHP\Http\Curl\Get;
+use SnooPHP\Curl\Get;
 
 /**
  * Perform raw api requests or use dedicated methods
@@ -46,7 +46,7 @@ class Api
 	/**
 	 * @var string $defaultCacheClass
 	 */
-	protected static $defaultCacheClass = "SnooPHP\Facebook\NullCache";
+	protected static $defaultCacheClass = "SnooPHP\Cache\NullCache";
 
 	/**
 	 * @const ENDPOINT facebook api endpoint
